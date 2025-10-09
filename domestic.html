@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Aerostellar — Domestic Cam Drone</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@200;300;400;600&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#000;
+      --glass-bg: rgba(255,255,255,0.06);
+      --glass-border: rgba(255,255,255,0.12);
+      --muted:#cfcfcf;
+      --accent: rgba(124, 211, 255, 0.12);
+      --glow: rgba(124, 211, 255, 0.16);
+      --card-w: 320px;
+      --radius: 20px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:'Poppins',sans-serif;
+      background:var(--bg);
+      color:#fff;
+      -webkit-font-smoothing:antialiased;
+      scroll-behavior:smooth;
+      overflow-x:hidden;
+    }
+
+    /* blurry moving shapes background (large, subtle, slow) */
+    .animated-bg{
+      position:fixed; inset:0; z-index:-2; pointer-events:none;
+      background:
+        radial-gradient(circle at 20% 30%, rgba(255,255,255,0.05) 0%, transparent 35%),
+        radial-gradient(circle at 80% 70%, rgba(180,120,255,0.03) 0%, transparent 40%),
+        radial-gradient(circle at 60% 20%, rgba(124,211,255,0.02) 0%, transparent 45%);
+      filter: blur(90px);
+      animation: bgMove 30s ease-in-out infinite alternate;
+    }
+    @keyframes bgMove{
+      0%{transform:translate3d(-6%, -4%, 0) scale(1.02)}
+      100%{transform:translate3d(6%, 4%, 0) scale(1)}
+    }
+
+    /* soft grain overlay for depth */
+    .grain{
+      position:fixed; inset:0; z-index:-1; pointer-events:none;
+      background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" opacity="0.02"><rect width="120" height="120" fill="%23000"/><g fill="%23fff" opacity="0.02"><circle cx="10" cy="10" r="0.8"/><circle cx="40" cy="90" r="0.8"/></g></svg>');
+      mix-blend-mode:overlay;
+    }
+
+    /* top navbar (glass) */
+    .navbar{
+      position:fixed; top:18px; left:50%; transform:translateX(-50%);
+      width:calc(100% - 40px); max-width:1100px;
+      display:flex; align-items:center; justify-content:space-between;
+      padding:12px 20px; gap:12px;
+      background:var(--glass-bg);
+      border-radius:calc(var(--radius) - 6px);
+      border:1px solid var(--glass-border);
+      box-shadow:0 8px 30px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.02);
+      backdrop-filter: blur(10px) saturate(140%);
+      z-index:50;
+    }
+    .logo{font-weight:600; font-size:18px; letter-spacing:0.2px}
+    .nav-links{display:flex; gap:18px; align-items:center}
+    .nav-links a{
+      color: #e8eef8cc; text-decoration:none; font-size:15px;
+      padding:6px 10px; border-radius:12px;
+      transition: all .25s ease;
+    }
+    .nav-links a:hover{transform:translateY(-3px); color:#fff; background:rgba(255,255,255,0.02)}
+
+    /* hero */
+    .hero{
+      height:92vh; display:flex; align-items:center; justify-content:center;
+      text-align:center; padding: 0 20px;
+    }
+    .hero-card{
+      width:100%; max-width:980px; padding:40px; border-radius:28px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));
+      border:1px solid rgba(255,255,255,0.08);
+      box-shadow:0 20px 60px rgba(0,0,0,0.6), 0 1px 0 rgba(255,255,255,0.02);
+      backdrop-filter: blur(12px) saturate(130%);
+    }
+    .hero h1{font-size:40px; margin-bottom:8px; letter-spacing:-0.6px}
+    .hero p{color:var(--muted); font-size:16px; margin-bottom:18px; max-width:850px; margin-left:auto;margin-right:auto}
+    .cta{
+      display:inline-block; padding:12px 26px; border-radius:999px; border:1px solid rgba(255,255,255,0.12);
+      background:linear-gradient(90deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));
+      color:#fff; cursor:pointer; text-decoration:none;
+      transition: transform .25s ease, box-shadow .25s;
+    }
+    .cta:hover{transform:translateY(-4px); box-shadow:0 12px 40px rgba(124,211,255,0.07)}
+
+    /* sections */
+    .section{
+      padding:80px 20px; display:block; max-width:1100px; margin:0 auto;
+    }
+    h2.section-title{font-size:28px; margin-bottom:26px; color:#fff; text-shadow:0 0 18px rgba(255,255,255,0.06)}
+    p.lead{color:var(--muted); max-width:900px; margin:0 auto 30px; line-height:1.6}
+
+    /* parallax media holder */
+    .parallax-wrap{position:relative; overflow:hidden; border-radius:18px; margin-bottom:30px}
+    .parallax-img{
+      height:320px; width:100%; object-fit:cover; transform:translateZ(0);
+      transition:transform .6s cubic-bezier(.2,.9,.2,1);
+      display:block;
+      filter: saturate(110%) contrast(105%) brightness(0.9);
+    }
+
+    /* cards area */
+    .cards{
+      display:flex; flex-wrap:wrap; gap:22px; justify-content:center;
+    }
+    .card{
+      width:var(--card-w); background:var(--glass-bg); border-radius:18px;
+      padding:18px; border:1px solid var(--glass-border);
+      box-shadow: 0 12px 30px rgba(0,0,0,0.6), 0 2px 8px rgba(255,255,255,0.02);
+      transition: transform .32s cubic-bezier(.2,.9,.2,1), box-shadow .32s;
+      backdrop-filter: blur(10px) saturate(140%);
+      cursor:pointer; position:relative; overflow:hidden;
+    }
+    .card img{width:100%; height:160px; object-fit:cover; border-radius:12px; display:block; margin-bottom:12px}
+    .card h3{margin:0 0 6px; font-size:18px}
+    .card p{color:var(--muted); font-size:14px; line-height:1.45}
+
+    .card::after{
+      content:''; position:absolute; inset:0; pointer-events:none;
+      background: linear-gradient(180deg, transparent, rgba(0,0,0,0.12));
+      mix-blend-mode:overlay;
+    }
+
+    /* glow on hover + floating effect */
+    .card:hover{
+      transform:translateY(-14px) scale(1.02);
+      box-shadow: 0 30px 70px rgba(0,0,0,0.65), 0 0 40px rgba(124,211,255,0.08), 0 0 18px rgba(124,211,255,0.06);
+      border-color: rgba(124,211,255,0.22);
+    }
+    .card:hover::before{
+      opacity:1; transform:scale(1.1);
+    }
+    .card::before{
+      content:''; position:absolute; left:-30%; top:-40%; width:160%; height:180%;
+      background: radial-gradient(circle at 40% 30%, rgba(124,211,255,0.12), transparent 18%),
+                  radial-gradient(circle at 70% 70%, rgba(180,120,255,0.06), transparent 22%);
+      filter: blur(30px); transform:scale(0.98); opacity:0; transition:all .45s ease;
+      pointer-events:none;
+    }
+
+    /* floating subtle animation on cards */
+    .card{animation:floaty 6s ease-in-out infinite}
+    @keyframes floaty{
+      0%{transform:translateY(0)}
+      50%{transform:translateY(-6px)}
+      100%{transform:translateY(0)}
+    }
+    /* make hover stronger (remove float while hovering) */
+    .card:hover{animation:none}
+
+    /* feature list */
+    .features{display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:18px; margin-top:22px}
+    .feature{
+      padding:14px; border-radius:14px; background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent);
+      border:1px solid rgba(255,255,255,0.04);
+    }
+    .feature h4{margin:0 0 8px; font-size:15px}
+    .feature p{margin:0;color:var(--muted); font-size:13px}
+
+    /* back button */
+    .back{
+      display:inline-block; margin-top:22px; color:var(--muted); text-decoration:none; border-radius:12px;
+      padding:8px 12px; border:1px solid rgba(255,255,255,0.04);
+    }
+    .back:hover{transform:translateY(-3px); color:#fff}
+
+    footer{padding:40px 20px; text-align:center; color:var(--muted); font-size:13px}
+
+    /* responsiveness */
+    @media (max-width:720px){
+      .navbar{left:10px; width:calc(100% - 20px); transform:none}
+      .hero h1{font-size:28px}
+      .hero-card{padding:20px; border-radius:16px}
+      .card{width:100%}
+      .parallax-img{height:220px}
+    }
+  </style>
+</head>
+<body>
+  <div class="animated-bg"></div>
+  <div class="grain"></div>
+
+  <header class="navbar">
+    <div style="display:flex;align-items:center;gap:12px">
+      <div class="logo">Aerostellar</div>
+      <div style="color:var(--muted);font-size:13px">Domestic Solutions</div>
+    </div>
+    <nav class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="#features">Features</a>
+      <a href="#gallery">Gallery</a>
+      <a href="defence.html">Defence</a>
+    </nav>
+  </header>
+
+  <main>
+    <!-- HERO -->
+    <section class="hero" id="top">
+      <div class="hero-card">
+        <h1>Domestic Cam Drone — Aerostellar</h1>
+        <p class="lead">AI-powered, compact cam drones crafted for events, travel, and personal aerial experiences.  
+        Intelligent stabilization, smooth cinematic capture, and safe autonomous navigation — made for individuals who want pro-level aerial footage and home assistance.</p>
+        <a class="cta" href="#innovations">Explore Innovations</a>
+      </div>
+    </section>
+
+    <!-- Innovations / details with parallax image -->
+    <section id="innovations" class="section">
+      <h2 class="section-title">Designed for Events, Tours & Personal Use</h2>
+      <div class="parallax-wrap" data-speed="0.35">
+        <img class="parallax-img" src="https://images.unsplash.com/photo-1504198453319-5ce911bafcde?auto=format&fit=crop&w=1400&q=80" alt="domestic drone">
+      </div>
+
+      <p class="lead">Aerostellar domestic drones combine compact form-factor with AI-assisted features: auto-tracking, cinematic orbit, low-light enhancement and one-tap flight modes for event coverage and travel memories.</p>
+
+      <div class="cards" id="cards">
+        <div class="card" onclick="openDetail('domestic-pro')">
+          <img src="" alt="drone capture">
+          <h3>Domestic Pro</h3>
+          <p>4K stabilized camera, 30 min flight, intelligent subject tracking, easy travel-fold design.</p>
+        </div>
+
+        <div class="card" onclick="openDetail('domestic-lite')">
+          <img src="" alt="drone flying">
+          <h3>Domestic Lite</h3>
+          <p>Lightweight, consumer-friendly drone for quick event shots and social content creators.</p>
+        </div>
+
+        <div class="card" onclick="openDetail('home-guardian')">
+          <img src="">
+          <h3>Home Guardian</h3>
+          <p>Designed for home monitoring — automated patrol routes, low-light sensors, and secure streaming.</p>
+        </div>
+      </div>
+
+      <div id="features" style="margin-top:26px">
+        <h2 class="section-title">Key Features</h2>
+        <div class="features">
+          <div class="feature">
+            <h4>AI Auto-Tracking</h4>
+            <p>Reliable subject lock for smooth footage during tours and events.</p>
+          </div>
+          <div class="feature">
+            <h4>One-Tap Cinematic Modes</h4>
+            <p>Pre-set trajectories for drone orbits, reveals and cinematic b-roll shots.</p>
+          </div>
+          <div class="feature">
+            <h4>Safety Systems</h4>
+            <p>Obstacle avoidance, return-to-home, geofencing and safe altitude hold.</p>
+          </div>
+          <div class="feature">
+            <h4>Compact & Travel-Ready</h4>
+            <p>Foldable form with dedicated travel case and airport-friendly batteries.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+      <a class="back" href="index.html">← Back to Aerostellar</a>
+    </section>
+
+    <footer>
+      © 2025 Aerostellar • Domestic Solutions • CEO: Sanjay S N • Marketing Head: Rithan K C
+    </footer>
+  </main>
+
+  <script>
+    // parallax effect for elements with data-speed / .parallax-img
+    const parallaxElements = document.querySelectorAll('.parallax-wrap');
+    function updateParallax(){
+      parallaxElements.forEach(el=>{
+        const img = el.querySelector('.parallax-img');
+        if(!img) return;
+        const rect = el.getBoundingClientRect();
+        const speed = parseFloat(el.dataset.speed || 0.25);
+        // when in viewport, move image slightly based on scroll
+        const windowH = window.innerHeight;
+        const offset = (rect.top - windowH/2) * -1;
+        const translateY = offset * speed / 20;
+        img.style.transform = `translate3d(0, ${translateY}px, 0) scale(1.03)`;
+      });
+    }
+    window.addEventListener('scroll', updateParallax, {passive:true});
+    window.addEventListener('resize', updateParallax);
+    updateParallax();
+
+    // open detail anchor simulation: navigate to anchors (or open modal-like detail)
+    function openDetail(id){
+      // you can change this to open a separate detailed file or show modal
+      // for now we'll navigate to a page anchor (or add logic to load more)
+      location.href = `#${id}`;
+      // optionally, scroll smoothly to an anchored block (if you add one)
+    }
+
+    // small accessibility improvement: reduce motion respect
+    (function reduceMotion(){
+      const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+      if(mq && mq.matches){
+        document.querySelectorAll('.parallax-img').forEach(i=>i.style.transition='none');
+        document.querySelectorAll('.card').forEach(c=>c.style.animation='none');
+      }
+    })();
+  </script>
+</body>
+</html>
